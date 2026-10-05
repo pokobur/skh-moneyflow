@@ -13,7 +13,7 @@ git config user.name "plyo"
 git config user.email "py.@plyonoMacBook-Air.local"
 git add -A
 git commit -m "Deploy custom domain to GitHub Pages $(date +'%Y-%m-%d %H:%M:%S')"
-git remote add origin https://github.com/pokobur/sky-moneyflow.git
+git remote add origin https://github.com/pokobur/skh-moneyflow.git
 git push -f origin gh-pages
 rm -rf .git
 cd ..
