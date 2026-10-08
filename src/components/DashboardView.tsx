@@ -13,6 +13,7 @@ import {
   PieChart as PieIcon,
   BarChart3,
   Calendar,
+  Scale,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -105,6 +106,19 @@ export const DashboardView: React.FC = () => {
     })
     .filter((d) => d.value > 0)
     .sort((a, b) => b.value - a.value);
+
+  // 3. 年間 総合収入 vs 支出総計 円グラフデータ
+  const incomeVsExpenseData = [
+    { name: '総合収入', value: flowSummary.annualTotalIncome, color: '#10b981' },
+    { name: '支出総計', value: flowSummary.annualPureExpense, color: '#f43f5e' },
+  ].filter((d) => d.value > 0);
+
+  const expenseRatio = flowSummary.annualTotalIncome > 0
+    ? ((flowSummary.annualPureExpense / flowSummary.annualTotalIncome) * 100).toFixed(1)
+    : '0';
+  const savingsRate = flowSummary.annualTotalIncome > 0
+    ? ((flowSummary.annualNetBalance / flowSummary.annualTotalIncome) * 100).toFixed(1)
+    : '0';
 
   // 4. 資産構成比（最新月）
   const assetDistributionData = [
@@ -302,32 +316,117 @@ export const DashboardView: React.FC = () => {
         </div>
       </div>
 
-      {/* グラフエリア 2: 支出内訳 & 資産構成比 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* チャート3: 支出内訳 (Donut Chart) */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <PieIcon className="w-4 h-4 text-rose-500" />
-              <h3 className="text-sm font-bold text-slate-800">
-                年間支出内訳（純消費費目シェア）
-              </h3>
+      {/* グラフエリア 2: 年間収支比率 & 支出内訳 & 資産構成比 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* チャート3: 年間 総合収入 vs 支出総計 (Donut Chart) */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Scale className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-800">
+                  年間 総合収入 vs 支出総計
+                </h3>
+              </div>
+              <span
+                className={`text-xs font-bold px-2 py-0.5 rounded ${
+                  flowSummary.annualNetBalance >= 0
+                    ? 'text-sky-700 bg-sky-50'
+                    : 'text-rose-700 bg-rose-50'
+                }`}
+              >
+                {flowSummary.annualNetBalance >= 0 ? '+' : ''}¥{flowSummary.annualNetBalance.toLocaleString()}
+              </span>
             </div>
-            <span className="text-xs text-slate-500">
-              総支出: ¥{flowSummary.annualPureExpense.toLocaleString()}
-            </span>
+
+            <div className="h-52 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={incomeVsExpenseData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={75}
+                    paddingAngle={4}
+                    dataKey="value"
+                  >
+                    {incomeVsExpenseData.map((entry, index) => (
+                      <Cell key={`cell-cashflow-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(val: number) => `¥${val.toLocaleString()}`} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* 内訳リスト */}
+            <div className="space-y-2 text-xs mt-1">
+              <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/70 border border-emerald-100">
+                <div className="flex items-center gap-1.5 font-semibold text-emerald-900">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span>総合収入</span>
+                </div>
+                <div className="font-extrabold text-emerald-800 tabular-nums">
+                  ¥{flowSummary.annualTotalIncome.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2 rounded-lg bg-rose-50/70 border border-rose-100">
+                <div className="flex items-center gap-1.5 font-semibold text-rose-900">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                  <span>支出総計</span>
+                </div>
+                <div className="font-extrabold text-rose-800 tabular-nums">
+                  ¥{flowSummary.annualPureExpense.toLocaleString()}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 items-center">
-            <div className="h-60 w-full">
+          {/* 指標フッター */}
+          <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-center text-xs">
+            <div className="p-1.5 rounded bg-slate-50 border border-slate-100">
+              <div className="text-[10px] text-slate-400 font-medium">支出比率</div>
+              <div className="font-bold text-slate-700">{expenseRatio}%</div>
+            </div>
+            <div className="p-1.5 rounded bg-slate-50 border border-slate-100">
+              <div className="text-[10px] text-slate-400 font-medium">純貯蓄率</div>
+              <div
+                className={`font-bold ${
+                  flowSummary.annualNetBalance >= 0 ? 'text-sky-600' : 'text-rose-600'
+                }`}
+              >
+                {savingsRate}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* チャート4: 支出内訳 (Donut Chart) */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <PieIcon className="w-4 h-4 text-rose-500" />
+                <h3 className="text-sm font-bold text-slate-800">
+                  年間支出内訳（費目シェア）
+                </h3>
+              </div>
+              <span className="text-xs text-slate-500 font-medium">
+                総支出: ¥{flowSummary.annualPureExpense.toLocaleString()}
+              </span>
+            </div>
+
+            <div className="h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={expenseBreakdownData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={45}
+                    outerRadius={75}
                     paddingAngle={3}
                     dataKey="value"
                   >
@@ -341,11 +440,11 @@ export const DashboardView: React.FC = () => {
             </div>
 
             {/* 内訳リスト */}
-            <div className="space-y-1.5 text-xs max-h-56 overflow-y-auto pr-2">
+            <div className="space-y-1.5 text-xs max-h-48 overflow-y-auto pr-1">
               {expenseBreakdownData.map((item, idx) => {
                 const percentage = ((item.value / flowSummary.annualPureExpense) * 100).toFixed(1);
                 return (
-                  <div key={item.name} className="flex items-center justify-between">
+                  <div key={item.name} className="flex items-center justify-between py-0.5">
                     <div className="flex items-center gap-1.5 truncate">
                       <span
                         className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -363,30 +462,30 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        {/* チャート4: 最新資産ポートフォリオ構成比 */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <PieIcon className="w-4 h-4 text-indigo-500" />
-              <h3 className="text-sm font-bold text-slate-800">
-                最新ポートフォリオ構成（{latestMonth}月時点）
-              </h3>
+        {/* チャート5: 最新資産ポートフォリオ構成比 (Donut Chart) */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <PieIcon className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-sm font-bold text-slate-800">
+                  最新ポートフォリオ構成
+                </h3>
+              </div>
+              <span className="text-xs text-slate-500 font-medium">
+                {latestMonth}月: ¥{(currentTotalAssets + currentEMoneyAssets).toLocaleString()}
+              </span>
             </div>
-            <span className="text-xs text-slate-500">
-              総計: ¥{(currentTotalAssets + currentEMoneyAssets).toLocaleString()}
-            </span>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 items-center">
-            <div className="h-60 w-full">
+            <div className="h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={assetDistributionData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={45}
+                    outerRadius={75}
                     paddingAngle={4}
                     dataKey="value"
                   >
@@ -400,20 +499,20 @@ export const DashboardView: React.FC = () => {
             </div>
 
             {/* ポートフォリオ詳細 */}
-            <div className="space-y-3 text-xs">
+            <div className="space-y-2 text-xs">
               {assetDistributionData.map((item) => {
                 const totalAll = currentTotalAssets + currentEMoneyAssets;
                 const percentage = totalAll > 0 ? ((item.value / totalAll) * 100).toFixed(1) : '0';
                 return (
                   <div key={item.name} className="p-2 rounded-lg bg-slate-50 border border-slate-100">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-0.5">
                       <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                         {item.name}
                       </span>
                       <span className="font-bold text-slate-700">{percentage}%</span>
                     </div>
-                    <div className="text-right text-sm font-extrabold text-slate-900 tabular-nums">
+                    <div className="text-right text-xs font-extrabold text-slate-900 tabular-nums">
                       ¥{item.value.toLocaleString()}
                     </div>
                   </div>

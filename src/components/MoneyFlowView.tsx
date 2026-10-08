@@ -16,6 +16,7 @@ import {
   AlertCircle,
   HelpCircle,
   ChevronDown,
+  Calculator,
 } from 'lucide-react';
 
 export const MoneyFlowView: React.FC = () => {
@@ -256,7 +257,7 @@ export const MoneyFlowView: React.FC = () => {
   const investmentItems = currentItems.filter((i) => i.category_type === 'investment');
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-12">
       {/* 画面説明バー */}
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900">
         <div className="flex items-center gap-2">
@@ -320,64 +321,134 @@ export const MoneyFlowView: React.FC = () => {
         'WealthNavi・投信・FX・仮想通貨等（純支出合計から除外）'
       )}
 
-      {/* 固定フッターサマリーバー */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900 text-white border-t border-slate-700 shadow-2xl backdrop-blur-md bg-slate-900/95">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 overflow-x-auto">
-          <div className="min-w-[900px] text-xs">
-            <div className="grid grid-cols-12 gap-1 py-1 border-b border-slate-800 text-slate-300 items-center">
-              <div className="col-span-2 font-bold flex items-center gap-1.5 text-emerald-400">
-                <span>総合収入（仕事＋支援）</span>
-              </div>
-              {months.map((m) => (
-                <div key={m} className="col-span-1 text-right font-medium tabular-nums text-slate-200">
-                  {summary.totalIncome[m].toLocaleString()}
-                </div>
-              ))}
-              <div className="col-span-2 text-right font-bold text-emerald-300 pl-2 border-l border-slate-800">
-                ¥{summary.annualTotalIncome.toLocaleString()}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-1 py-1 border-b border-slate-800 text-slate-300 items-center">
-              <div className="col-span-2 font-bold flex items-center gap-1.5 text-rose-400">
-                <span>支出総計（純支出）</span>
-              </div>
-              {months.map((m) => (
-                <div key={m} className="col-span-1 text-right font-medium tabular-nums text-slate-200">
-                  {summary.pureExpenseTotal[m].toLocaleString()}
-                </div>
-              ))}
-              <div className="col-span-2 text-right font-bold text-rose-300 pl-2 border-l border-slate-800">
-                ¥{summary.annualPureExpense.toLocaleString()}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-1 py-1 items-center">
-              <div className="col-span-2 font-bold flex items-center gap-1.5 text-sky-400">
-                <span>月次差額（収入 - 支出）</span>
-              </div>
-              {months.map((m) => {
-                const diff = summary.netBalance[m];
-                return (
-                  <div
-                    key={m}
-                    className={`col-span-1 text-right font-bold tabular-nums ${
-                      diff < 0 ? 'text-rose-400' : 'text-sky-300'
-                    }`}
-                  >
-                    {(diff > 0 ? '+' : '') + diff.toLocaleString()}
-                  </div>
-                );
-              })}
-              <div
-                className={`col-span-2 text-right font-extrabold text-sm pl-2 border-l border-slate-800 ${
-                  summary.annualNetBalance < 0 ? 'text-rose-400' : 'text-sky-300'
-                }`}
-              >
-                ¥{summary.annualNetBalance.toLocaleString()}
-              </div>
-            </div>
+      {/* 総合収支サマリーカード（投資・積立の直下に設置） */}
+      <div className="mb-6 rounded-xl border border-slate-300 bg-white shadow-sm overflow-hidden">
+        {/* ヘッダー */}
+        <div className="px-4 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calculator className="w-4 h-4 text-sky-400" />
+            <h3 className="font-bold text-sm tracking-wide">
+              総合収支サマリー（収入・支出・月次差額）
+            </h3>
           </div>
+          <span className="text-xs text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+            {currentYear}年度
+          </span>
+        </div>
+
+        {/* グリッドテーブル */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-100 text-slate-600 border-b border-slate-200 text-center font-medium">
+                <th className="py-2.5 px-3 text-left w-36 border-r border-slate-200">項目名</th>
+                {months.map((m) => (
+                  <th key={m} className="py-2.5 px-1 w-20 border-r border-slate-200">
+                    {m}月
+                  </th>
+                ))}
+                <th className="py-2.5 px-2 w-24 border-r border-slate-200 bg-slate-200/60 font-semibold text-slate-800">
+                  年間総計
+                </th>
+                <th colSpan={4} className="py-2.5 px-3 text-left">
+                  説明・内訳
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {/* 行1: 総合収入 */}
+              <tr className="hover:bg-emerald-50/50 transition-colors">
+                <td className="py-2.5 px-3 border-r border-slate-200 font-bold text-emerald-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  総合収入
+                </td>
+                {months.map((m) => (
+                  <td key={m} className="p-0 border-r border-slate-200">
+                    <EditableCell
+                      value={summary.totalIncome[m] || 0}
+                      onChange={() => {}}
+                      readOnly
+                      className="font-bold text-emerald-700"
+                    />
+                  </td>
+                ))}
+                <td className="p-0 border-r border-slate-200 bg-emerald-50/80">
+                  <EditableCell
+                    value={summary.annualTotalIncome}
+                    onChange={() => {}}
+                    readOnly
+                    className="font-extrabold text-emerald-800"
+                  />
+                </td>
+                <td colSpan={4} className="py-2 px-3 text-slate-500 text-[11px]">
+                  仕事収入（給与・副業） ＋ 支援物資（固定・臨時）
+                </td>
+              </tr>
+
+              {/* 行2: 支出総計（純支出） */}
+              <tr className="hover:bg-rose-50/50 transition-colors">
+                <td className="py-2.5 px-3 border-r border-slate-200 font-bold text-rose-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                  支出総計
+                </td>
+                {months.map((m) => (
+                  <td key={m} className="p-0 border-r border-slate-200">
+                    <EditableCell
+                      value={summary.pureExpenseTotal[m] || 0}
+                      onChange={() => {}}
+                      readOnly
+                      className="font-bold text-rose-700"
+                    />
+                  </td>
+                ))}
+                <td className="p-0 border-r border-slate-200 bg-rose-50/80">
+                  <EditableCell
+                    value={summary.annualPureExpense}
+                    onChange={() => {}}
+                    readOnly
+                    className="font-extrabold text-rose-800"
+                  />
+                </td>
+                <td colSpan={4} className="py-2 px-3 text-slate-500 text-[11px]">
+                  生活費・カード・光熱費・家賃等の純消費支出
+                </td>
+              </tr>
+
+              {/* 行3: 月次差額 */}
+              <tr className="bg-slate-50/90 font-extrabold border-t-2 border-slate-300">
+                <td className="py-2.5 px-3 border-r border-slate-200 text-sky-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+                  月次差額
+                </td>
+                {months.map((m) => {
+                  const diff = summary.netBalance[m] || 0;
+                  return (
+                    <td key={m} className="p-0 border-r border-slate-200">
+                      <EditableCell
+                        value={diff}
+                        onChange={() => {}}
+                        readOnly
+                        isDiff
+                        className={`font-extrabold ${diff < 0 ? 'text-rose-600' : 'text-sky-700'}`}
+                      />
+                    </td>
+                  );
+                })}
+                <td className="p-0 border-r border-slate-200 bg-slate-200/90">
+                  <EditableCell
+                    value={summary.annualNetBalance}
+                    onChange={() => {}}
+                    readOnly
+                    isDiff
+                    className={`font-extrabold text-sm ${summary.annualNetBalance < 0 ? 'text-rose-600' : 'text-sky-800'}`}
+                  />
+                </td>
+                <td colSpan={4} className="py-2 px-3 text-slate-700 text-[11px] font-semibold">
+                  総合収入 － 支出総計（純貯蓄増減）
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
